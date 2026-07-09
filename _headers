@@ -1,0 +1,4 @@
+# Netlify: aislamiento de origen → MediaPipe usa hilos (más rápido en iPad).
+/*
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: require-corp
