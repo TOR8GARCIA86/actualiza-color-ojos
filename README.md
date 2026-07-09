@@ -1,8 +1,17 @@
 # AOC — Color de Ojos 👁️
 
-App de escritorio (Mac/Windows) que cambia el **color de los ojos** simulando lentes
-de contacto. Funciona **100% offline** — la detección del iris corre localmente con
-MediaPipe (WASM), sin enviar nada a internet.
+App que cambia el **color de los ojos** simulando lentes de contacto, en tiempo real.
+
+## 🔗 Demo en vivo (ábrela en el celular/iPad o navegador)
+### 👉 https://tor8garcia86.github.io/actualiza-color-ojos/
+> En iPad/iPhone: ábrela en **Safari**, acepta el permiso de **cámara**, y puedes
+> **Compartir → Agregar a inicio** para usarla como app (incluso sin conexión).
+
+---
+
+También hay una versión de **escritorio (Mac/Windows)** con Electron. Funciona
+**100% offline** — la detección del iris corre localmente con MediaPipe (WASM),
+sin enviar nada a internet.
 
 ## Características
 - 🎥 **En vivo**: cambia el color en la vista de la cámara en tiempo real.
