@@ -1,0 +1,15 @@
+{
+  "note": "Catálogo de lentes Alcon (Air Optix Colors). 'texture' = imagen PNG del lente. 'color' = tono para el círculo de vista previa en el panel.",
+  "lenses": [
+    { "id": "none",           "name": "Sin lente",       "color": null },
+    { "id": "honey",          "name": "Honey",           "color": "#b07a30", "texture": "lenses/Alcon_Lenses_Honey_4c_HR.png" },
+    { "id": "hazel",          "name": "Hazel",           "color": "#8a6a3a", "texture": "lenses/Alcon_Lenses_Hazel_4c_HRw.png" },
+    { "id": "brown",          "name": "Brown",           "color": "#6b4a2b", "texture": "lenses/Alcon_Lenses_Brown_4c_HR.png" },
+    { "id": "green",          "name": "Green",           "color": "#4f7d4a", "texture": "lenses/Alcon_Lenses_Green_4c_HR_1.png" },
+    { "id": "gemgreen",       "name": "Gem Green",       "color": "#2f8f6b", "texture": "lenses/Alcon_Lenses_GemGreen_4c_HR.png" },
+    { "id": "blue",           "name": "Blue",            "color": "#3f74b0", "texture": "lenses/Alcon_Lenses_Blue_4c_HR_1.png" },
+    { "id": "brilliantblue",  "name": "Brilliant Blue",  "color": "#2f7fd0", "texture": "lenses/Alcon_Lenses_BrilliantBlue_4c_HR.png" },
+    { "id": "gray",           "name": "Gray",            "color": "#7f8794", "texture": "lenses/Alcon_Lenses_Gray_4c_HR_1.png" },
+    { "id": "sterlinggray",   "name": "Sterling Gray",   "color": "#9aa0a8", "texture": "lenses/Alcon_Lenses_SterlingGray_4c_HR.png" }
+  ]
+}

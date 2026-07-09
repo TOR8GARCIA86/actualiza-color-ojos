@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "aoc-web",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["web/serve.js"],
+      "port": 8100
+    }
+  ]
+}
