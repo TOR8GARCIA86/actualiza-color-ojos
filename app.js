@@ -168,8 +168,8 @@ async function startCamera(deviceId) {
       }
     }
     let msg = err.message;
-    if (err.name === 'TimeoutError') msg = 'La cámara no respondió (¿es una cámara virtual?). Elige otra en el selector de arriba.';
-    else if (err.name === 'NotAllowedError') msg = 'Permiso denegado. Ajustes del Sistema → Privacidad → Cámara → activa Electron.';
+    if (err.name === 'TimeoutError') msg = 'La cámara no respondió. Prueba con el botón 🔄 y elige otra cámara.';
+    else if (err.name === 'NotAllowedError') msg = 'Permiso de cámara denegado. Actívalo en los ajustes del navegador y recarga.';
     else if (err.name === 'NotFoundError') msg = 'No se encontró ninguna cámara.';
     else if (err.name === 'NotReadableError') msg = 'La cámara está en uso por otra app.';
     setStatus('⚠ Cámara: ' + msg);
@@ -247,22 +247,59 @@ function paintEyes(eyes, landmarks) {
 async function setMode(mode) {
   if (state.mode === mode) return;
   state.mode = mode;
-  document.querySelectorAll('.mode-btn').forEach((b) =>
-    b.classList.toggle('active', b.dataset.mode === mode));
-  document.getElementById('snapBtn').style.display = mode === 'live' ? '' : 'none';
+  document.getElementById('app').dataset.mode = mode;
 
   if (mode === 'live') {
     await setRunningMode('VIDEO');
     state.lastVideoTime = -1;
-    if (!video.srcObject) await startCamera();
+    if (!video.srcObject) await startCamera(state.currentDeviceId);
     state.running = true;
     liveLoop();
+    setStatus('');
   } else {
     state.running = false;
     if (state.photoImage) renderPhoto();
-    else setStatus('Abre una foto o captura desde la cámara');
   }
 }
+
+// ---------- Cuenta regresiva + captura ----------
+let _counting = false;
+function startCountdown(n = 5) {
+  if (_counting || state.mode !== 'live') return;
+  _counting = true;
+  const shutter = document.getElementById('shutterBtn');
+  const cd = document.getElementById('countdown');
+  shutter.classList.add('counting');
+  let k = n;
+  const show = (v) => {
+    cd.classList.add('show');
+    cd.innerHTML = `<b>${v}</b>`;
+    const b = cd.querySelector('b'); b.style.animation = 'none'; void b.offsetWidth; b.style.animation = '';
+  };
+  show(k);
+  const tick = () => {
+    k -= 1;
+    if (k > 0) { show(k); setTimeout(tick, 1000); }
+    else {
+      cd.classList.remove('show'); cd.innerHTML = '';
+      shutter.classList.remove('counting');
+      _counting = false;
+      flash();
+      snap();
+    }
+  };
+  setTimeout(tick, 1000);
+}
+function flash() {
+  const vp = document.getElementById('viewport');
+  let f = vp.querySelector('.flash');
+  if (!f) { f = document.createElement('div'); f.className = 'flash'; vp.appendChild(f); }
+  f.classList.remove('go'); void f.offsetWidth; f.classList.add('go');
+}
+
+// ---------- Ventanas emergentes ----------
+function openSheet(id) { document.getElementById(id).classList.add('open'); }
+function closeSheet(el) { el && el.classList.remove('open'); }
 
 // ---------- Acciones ----------
 function snap() {
@@ -340,19 +377,25 @@ function smoothEyes(eyes) {
 
 // ---------- Controles UI ----------
 function bindControls() {
-  document.getElementById('modeSwitch').addEventListener('click', (e) => {
-    const btn = e.target.closest('.mode-btn');
-    if (btn) setMode(btn.dataset.mode);
-  });
-  document.getElementById('snapBtn').onclick = snap;
   document.getElementById('openBtn').onclick = openPhoto;
   document.getElementById('saveBtn').onclick = save;
+  document.getElementById('shutterBtn').onclick = () => startCountdown(5);
+  document.getElementById('retakeBtn').onclick = () => setMode('live');
+  document.getElementById('settingsBtn').onclick = () => openSheet('sheetControls');
+  document.getElementById('cameraBtn').onclick = () => openSheet('sheetCamera');
+  // Cerrar sheets (botón ✕ o tocar el fondo)
+  document.querySelectorAll('.sheet-close').forEach((b) =>
+    b.onclick = () => closeSheet(document.getElementById(b.dataset.sheet)));
+  document.querySelectorAll('.sheet').forEach((s) =>
+    s.addEventListener('click', (e) => { if (e.target === s) closeSheet(s); }));
+
   document.getElementById('camera').onchange = async (e) => {
     setStatus('Cambiando de cámara…');
     if (await startCamera(e.target.value)) {
       state.currentDeviceId = e.target.value;
       if (state.mode === 'live') { state.lastVideoTime = -1; liveLoop(); }
     }
+    setStatus('');
   };
 
   const op = document.getElementById('opacity');

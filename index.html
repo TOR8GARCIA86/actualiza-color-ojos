@@ -4,9 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>AOC — Color de Ojos</title>
-  <meta name="theme-color" content="#0f1117">
+  <meta name="theme-color" content="#000000">
   <link rel="manifest" href="manifest.webmanifest">
-  <!-- iPad / iOS: pantalla completa al agregar a inicio -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="AOC">
@@ -15,63 +14,71 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div id="app">
-    <header class="topbar">
-      <div class="brand">
-        <span class="dot"></span> AOC <small>· Color de Ojos</small>
-      </div>
-      <div class="mode-switch" id="modeSwitch">
-        <button class="mode-btn active" data-mode="live">🎥 En vivo</button>
-        <button class="mode-btn" data-mode="photo">📸 Foto</button>
-      </div>
-      <div class="top-actions">
-        <select id="camera" class="cam-select" title="Elegir cámara"></select>
-        <button id="snapBtn" class="btn ghost" title="Capturar foto de la cámara">Capturar</button>
-        <button id="openBtn" class="btn ghost">Abrir foto…</button>
-        <button id="saveBtn" class="btn primary">Guardar</button>
-      </div>
-    </header>
+  <div id="app" data-mode="live">
+    <div class="viewport" id="viewport">
+      <video id="video" autoplay playsinline muted></video>
+      <canvas id="output"></canvas>
 
-    <main class="stage">
-      <div class="viewport" id="viewport">
-        <video id="video" autoplay playsinline muted></video>
-        <canvas id="output"></canvas>
-        <div id="status" class="status">Iniciando…</div>
+      <!-- Botones flotantes arriba -->
+      <div class="top-fabs">
+        <button id="cameraBtn" class="fab" title="Opciones de cámara">🔄</button>
+        <button id="settingsBtn" class="fab" title="Ajustes">⚙️</button>
+      </div>
+
+      <div id="status" class="status">Iniciando…</div>
+      <div id="countdown" class="countdown"></div>
+
+      <!-- UI inferior: carrete + acciones -->
+      <div class="bottom-ui">
         <div class="lens-strip" id="lensStrip"><!-- generado por JS --></div>
+        <div class="action-row">
+          <button id="openBtn" class="round-btn" title="Abrir foto de la galería">🖼️</button>
+          <button id="shutterBtn" class="shutter live-only" title="Tomar foto (5s)"><span></span></button>
+          <button id="retakeBtn" class="round-btn big photo-only" title="Volver a la cámara">↺</button>
+          <button id="saveBtn" class="round-btn" title="Guardar / compartir">⬇️</button>
+        </div>
       </div>
+    </div>
 
-      <aside class="panel">
-        <section class="controls">
-          <label class="ctl">
-            <span>Intensidad <b id="opacityVal">90%</b></span>
-            <input type="range" id="opacity" min="0" max="100" value="90">
-          </label>
-          <label class="ctl">
-            <span>Tamaño del iris <b id="scaleVal">100%</b></span>
-            <input type="range" id="scale" min="80" max="130" value="100">
-          </label>
-          <label class="ctl">
-            <span>Mezcla</span>
-            <select id="blend">
-              <option value="natural" selected>Natural (respeta brillo)</option>
-              <option value="vivid">Vívido</option>
-              <option value="tint">Tinte suave</option>
-            </select>
-          </label>
-          <label class="ctl toggle">
-            <input type="checkbox" id="showMesh"> <span>Ver detección</span>
-          </label>
-        </section>
-        <section class="hint">
-          <p>Elige un lente en la barra inferior 👇</p>
-        </section>
-      </aside>
-    </main>
+    <!-- Ventana emergente: Ajustes -->
+    <div id="sheetControls" class="sheet" aria-hidden="true">
+      <div class="sheet-panel">
+        <div class="sheet-head"><span>Ajustes del lente</span><button class="sheet-close" data-sheet="sheetControls">✕</button></div>
+        <label class="ctl">
+          <span>Intensidad <b id="opacityVal">90%</b></span>
+          <input type="range" id="opacity" min="0" max="100" value="90">
+        </label>
+        <label class="ctl">
+          <span>Tamaño del iris <b id="scaleVal">100%</b></span>
+          <input type="range" id="scale" min="80" max="130" value="100">
+        </label>
+        <label class="ctl">
+          <span>Mezcla</span>
+          <select id="blend">
+            <option value="natural" selected>Natural (respeta brillo)</option>
+            <option value="vivid">Vívido</option>
+            <option value="tint">Tinte suave</option>
+          </select>
+        </label>
+        <label class="ctl toggle"><input type="checkbox" id="showMesh"> <span>Ver detección</span></label>
+      </div>
+    </div>
+
+    <!-- Ventana emergente: Cámara -->
+    <div id="sheetCamera" class="sheet" aria-hidden="true">
+      <div class="sheet-panel">
+        <div class="sheet-head"><span>Cámara</span><button class="sheet-close" data-sheet="sheetCamera">✕</button></div>
+        <label class="ctl">
+          <span>Elegir cámara</span>
+          <select id="camera"></select>
+        </label>
+        <p class="sheet-hint">Si tienes cámara frontal y trasera, elígela aquí.</p>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="app.js"></script>
   <script>
-    // Registro del service worker (offline / PWA).
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js').catch((e) => console.warn('SW:', e.message));
