@@ -1,5 +1,5 @@
 // Service worker: cachea la app y sus recursos para funcionar OFFLINE en el iPad.
-const CACHE = 'aoc-v2';
+const CACHE = 'aoc-v3';
 const CORE = [
   './', 'index.html', 'styles.css', 'app.js', 'eyeTracker.js', 'lensRenderer.js',
   'manifest.webmanifest'

@@ -67,35 +67,43 @@ body {
 }
 .bottom-ui > * { pointer-events: auto; }
 
-/* Carrete de lentes */
+/* Carrete tipo cascada: un lente centrado grande, los vecinos se asoman */
 .lens-strip {
-  display: flex; gap: 14px; align-items: flex-end;
+  display: flex; gap: 6px; align-items: center;
   overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch;
-  padding: 6px 16px; scrollbar-width: none;
-  scroll-snap-type: x proximity;
+  padding: 10px calc(50% - 34px);   /* centra el primer/último lente */
+  scrollbar-width: none; scroll-snap-type: x mandatory;
 }
 .lens-strip::-webkit-scrollbar { display: none; }
 .lens-strip .lens {
-  flex: 0 0 auto; width: 62px; background: transparent; border: 0; padding: 0;
+  flex: 0 0 auto; width: 68px; background: transparent; border: 0; padding: 0;
   cursor: pointer; display: flex; flex-direction: column; align-items: center;
-  gap: 5px; opacity: .7; transition: opacity .15s; scroll-snap-align: center;
+  gap: 6px; scroll-snap-align: center;
+  transition: transform .12s ease, opacity .12s ease; will-change: transform, opacity;
 }
-.lens-strip .lens.active { opacity: 1; }
 .lens-strip .lens .swatch {
-  width: 56px; height: 56px; border-radius: 50%; overflow: hidden;
-  background: #0d0f15; border: 2px solid rgba(255,255,255,.6);
-  transition: transform .15s, border-color .15s, box-shadow .15s;
+  width: 62px; height: 62px; border-radius: 50%; overflow: hidden;
+  background: #0d0f15; border: 2px solid rgba(255,255,255,.5);
+  transition: border-color .15s, box-shadow .15s;
 }
 .lens-strip .lens .swatch img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .lens-strip .lens.active .swatch {
-  border-color: var(--accent); transform: scale(1.16);
-  box-shadow: 0 0 0 4px rgba(110,168,254,.3);
+  border-color: var(--accent); box-shadow: 0 0 0 4px rgba(110,168,254,.4);
 }
 .swatch.none-sw { background: repeating-conic-gradient(#333 0 25%, #222 0 50%) 50% / 12px 12px; }
 .lens-strip .lens .name {
-  font-size: 10px; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.9);
-  white-space: nowrap; max-width: 62px; overflow: hidden; text-overflow: ellipsis;
+  font-size: 11px; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,.95);
+  white-space: nowrap; max-width: 90px; overflow: hidden; text-overflow: ellipsis;
+  opacity: 0; transition: opacity .12s;
 }
+.lens-strip .lens.active .name { opacity: 1; }   /* solo el centrado muestra su nombre */
+
+/* Al capturar / en la foto: ocultar toda la interfaz */
+#app.capturing .top-fabs,
+#app.capturing .bottom-ui { opacity: 0; pointer-events: none; transition: opacity .2s; }
+#app[data-mode="photo"] .top-fabs,
+#app[data-mode="photo"] .lens-strip,
+#app[data-mode="photo"] #openBtn { display: none; }
 
 /* Fila de acciones (galería · obturador · guardar) */
 .action-row {
@@ -162,5 +170,4 @@ select {
 /* En pantallas grandes (desktop) centramos y limitamos el ancho de los sheets */
 @media (min-width: 800px) {
   .sheet-panel { left: 50%; right: auto; transform: translateX(-50%); width: 420px; border-radius: 20px; bottom: 24px; }
-  .lens-strip { justify-content: center; }
 }
