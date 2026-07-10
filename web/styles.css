@@ -104,6 +104,9 @@ body {
 #app[data-mode="photo"] .top-fabs,
 #app[data-mode="photo"] .lens-strip,
 #app[data-mode="photo"] #openBtn { display: none; }
+/* En la cámara (en vivo) dejamos solo el obturador centrado */
+#app[data-mode="live"] #openBtn,
+#app[data-mode="live"] #saveBtn { display: none; }
 
 /* Fila de acciones (galería · obturador · guardar) */
 .action-row {
