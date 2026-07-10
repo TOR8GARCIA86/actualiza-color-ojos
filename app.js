@@ -18,7 +18,9 @@ const state = {
   running: false,
   lastVideoTime: -1,
   currentDeviceId: null,
-  showLogo: true
+  showLogo: true,
+  autoOpacity: true,   // intensidad automática según la luz
+  autoScale: true      // tamaño auto-ajustado al iris
 };
 
 // Logo ACTUALIZA (overlay sobre el pecho).
@@ -220,6 +222,33 @@ function stopCamera() {
   video.srcObject = null;
 }
 
+// Mide la luz ambiente del cuadro (0..1) con un mini muestreo, y ajusta la
+// intensidad automáticamente: con poca luz sube (para que el color se note),
+// con mucha luz baja (para que no se vea forzado).
+const _lumCanvas = document.createElement('canvas');
+_lumCanvas.width = _lumCanvas.height = 24;
+const _lumCtx = _lumCanvas.getContext('2d', { willReadFrequently: true });
+let _lumTick = 0;
+function autoAdjustIntensity() {
+  if (!state.autoOpacity) return;
+  if ((_lumTick++ % 6) !== 0) return;          // ~cada 6 frames (rendimiento)
+  let L;
+  try {
+    _lumCtx.drawImage(video, 0, 0, 24, 24);
+    const d = _lumCtx.getImageData(0, 0, 24, 24).data;
+    let s = 0;
+    for (let i = 0; i < d.length; i += 4) s += 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+    L = (s / (d.length / 4)) / 255;             // 0 (oscuro) .. 1 (claro)
+  } catch (_) { return; }
+  const target = Math.max(0.72, Math.min(1.0, 1.05 - L * 0.55));
+  state.opacity += (target - state.opacity) * 0.1;   // transición suave
+  const pct = Math.round(state.opacity * 100);
+  const slider = document.getElementById('opacity');
+  const val = document.getElementById('opacityVal');
+  if (slider) slider.value = pct;
+  if (val) val.textContent = pct + '%';
+}
+
 // ---------- Loop de video en vivo ----------
 async function liveLoop() {
   if (state.mode !== 'live' || !state.running) return;
@@ -228,10 +257,11 @@ async function liveLoop() {
     const W = video.videoWidth, H = video.videoHeight;
     if (canvas.width !== W) { canvas.width = W; canvas.height = H; }
 
+    autoAdjustIntensity();
     ctx.drawImage(video, 0, 0, W, H);
     const { eyes, landmarks } = detect(video, 'VIDEO', performance.now(), W, H);
     paintEyes(smoothEyes(eyes), landmarks);
-    if (eyes.length) setStatus('Detectando · ' + (state.lens ? state.lens.name : 'sin lente'));
+    if (eyes.length) setStatus('');
     else setStatus('Buscando rostro…');
   }
   requestAnimationFrame(liveLoop);
@@ -397,13 +427,18 @@ function smoothEyes(eyes) {
   return eyes.map((e, i) => {
     const p = _smooth[i];
     if (p && p.poly && p.poly.length === e.poly.length) {
-      // Adaptativo: casi instantáneo al moverte (no se queda atrás); solo suaviza
-      // el micro-temblor cuando estás quieto.
       const dist = Math.hypot(e.cx - p.cx, e.cy - p.cy);
-      const a = dist > e.r * 0.10 ? 0.98 : 0.75;
+      const dead = e.r * 0.06;         // zona muerta: ignora el micro-temblor
+      // Adaptativo anti-vibración: congelado si el temblor es diminuto,
+      // suave en movimientos pequeños, y rápido solo en movimientos reales.
+      let a;
+      if (dist < dead) a = 0.12;
+      else if (dist < e.r * 0.28) a = 0.4;
+      else a = 0.9;
       e.cx = p.cx + (e.cx - p.cx) * a;
       e.cy = p.cy + (e.cy - p.cy) * a;
-      e.r = p.r + (e.r - p.r) * a;
+      // El radio se suaviza SIEMPRE fuerte → elimina el "latido" de tamaño.
+      e.r = p.r + (e.r - p.r) * 0.18;
       e.poly = e.poly.map((pt, k) => ({
         x: p.poly[k].x + (pt.x - p.poly[k].x) * a,
         y: p.poly[k].y + (pt.y - p.poly[k].y) * a
@@ -439,15 +474,31 @@ function bindControls() {
 
   const op = document.getElementById('opacity');
   op.oninput = () => {
+    state.autoOpacity = false;                                   // mover = manual
+    document.getElementById('autoOpacity').checked = false;
     state.opacity = op.value / 100;
     document.getElementById('opacityVal').textContent = op.value + '%';
     if (state.mode === 'photo') renderPhoto();
   };
+  document.getElementById('autoOpacity').onchange = (e) => {
+    state.autoOpacity = e.target.checked;
+  };
   const sc = document.getElementById('scale');
   sc.oninput = () => {
+    state.autoScale = false;                                     // mover = manual
+    document.getElementById('autoScale').checked = false;
     state.scale = sc.value / 100;
     document.getElementById('scaleVal').textContent = sc.value + '%';
     if (state.mode === 'photo') renderPhoto();
+  };
+  document.getElementById('autoScale').onchange = (e) => {
+    state.autoScale = e.target.checked;
+    if (e.target.checked) {                                      // Auto → vuelve a 100%
+      state.scale = 1.0;
+      sc.value = 100;
+      document.getElementById('scaleVal').textContent = '100%';
+      if (state.mode === 'photo') renderPhoto();
+    }
   };
   document.getElementById('blend').onchange = (e) => {
     state.blend = e.target.value;

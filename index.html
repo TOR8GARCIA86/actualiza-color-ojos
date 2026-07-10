@@ -44,14 +44,20 @@
     <div id="sheetControls" class="sheet" aria-hidden="true">
       <div class="sheet-panel">
         <div class="sheet-head"><span>Ajustes del lente</span><button class="sheet-close" data-sheet="sheetControls">✕</button></div>
-        <label class="ctl">
-          <span>Intensidad <b id="opacityVal">90%</b></span>
+        <div class="ctl">
+          <span>Intensidad <b id="opacityVal">90%</b>
+            <label class="auto-chip"><input type="checkbox" id="autoOpacity" checked> Auto</label>
+          </span>
           <input type="range" id="opacity" min="0" max="100" value="90">
-        </label>
-        <label class="ctl">
-          <span>Tamaño del iris <b id="scaleVal">100%</b></span>
+          <small class="ctl-note">Se ajusta según la luz del lugar. Mueve la barra para manual.</small>
+        </div>
+        <div class="ctl">
+          <span>Tamaño del iris <b id="scaleVal">100%</b>
+            <label class="auto-chip"><input type="checkbox" id="autoScale" checked> Auto</label>
+          </span>
           <input type="range" id="scale" min="80" max="130" value="100">
-        </label>
+          <small class="ctl-note">Se ajusta solo al tamaño de tu iris. Mueve la barra para manual.</small>
+        </div>
         <label class="ctl">
           <span>Mezcla</span>
           <select id="blend">
