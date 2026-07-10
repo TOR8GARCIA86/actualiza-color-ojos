@@ -38,10 +38,21 @@ function drawLogo(landmarks) {
     const faceH = Math.hypot((chin.x - top.x) * W, (chin.y - top.y) * H);
     lw = faceW * 2.5;              // el tamaño sigue la profundidad (cerca/lejos)
     cxp = W / 2;                   // SIEMPRE centrado horizontalmente
-    topY = chinY + faceH * 0.5;    // un poco más arriba que antes
+    topY = chinY + faceH * 0.5;
   } else {
-    lw = W * 0.42; cxp = W / 2; topY = H * 0.78;
+    lw = W * 0.9; cxp = W / 2; topY = H * 0.78;
   }
+
+  // Limita el ancho del logo al ancho REALMENTE VISIBLE en pantalla (el video
+  // se recorta con object-fit:cover), para que nunca se corte al acercarse.
+  let maxLw = W * 0.92;
+  const cw = canvas.clientWidth, ch = canvas.clientHeight;
+  if (cw > 0 && ch > 0) {
+    const coverScale = Math.max(cw / W, ch / H);   // escala de object-fit:cover
+    maxLw = (cw / coverScale) * 0.92;              // ancho visible en px del canvas
+  }
+  lw = Math.min(lw, maxLw);
+
   const lh = lw / LOGO_ASPECT;
   ctx.save();
   ctx.globalCompositeOperation = 'source-over';
@@ -75,32 +86,58 @@ function buildGrid(grid) {
     el.className = 'lens' + (idx === 0 ? ' active' : '');
     el.dataset.id = lens.id;
     el.innerHTML = lensThumb(lens) + `<div class="name">${lens.name}</div>`;
-    el.onclick = () => selectLens(lens.id);
+    // Al tocar un lente, lo llevamos al centro (el centrado se auto-selecciona).
+    el.onclick = () => el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     grid.appendChild(el);
   });
 }
 
-// Selección de lente desde la barra inferior.
-function selectLens(id) {
+// Aplica el lente que quedó en el CENTRO del carrete.
+function applyCentered(id) {
   const lens = catalogData.lenses.find((l) => l.id === id);
   state.lens = (!lens || lens.id === 'none') ? null : lens;
-  const items = document.querySelectorAll('.lens-strip .lens');
-  items.forEach((n) => n.classList.toggle('active', n.dataset.id === id));
-  const active = document.querySelector('.lens-strip .lens.active');
-  if (active) active.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  document.querySelectorAll('.lens-strip .lens').forEach((n) =>
+    n.classList.toggle('active', n.dataset.id === id));
   if (state.mode === 'photo') renderPhoto();
 }
 
-// Rueda del mouse / trackpad → desplaza la barra en horizontal.
+// Carrete tipo cascada: escala/atenúa cada lente según su distancia al centro,
+// y selecciona automáticamente el que queda centrado.
+let _centeredId = null;
+function updateCarousel() {
+  const strip = document.getElementById('lensStrip');
+  const items = strip && strip.querySelectorAll('.lens');
+  if (!items || !items.length) return;
+  const box = strip.getBoundingClientRect();
+  const cx = box.left + box.width / 2;
+  let best = null, bestDist = Infinity;
+  items.forEach((el) => {
+    const r = el.getBoundingClientRect();
+    const d = Math.abs(r.left + r.width / 2 - cx);
+    const norm = Math.min(1, d / (box.width * 0.5));
+    el.style.transform = `scale(${(1 - norm * 0.4).toFixed(3)})`;
+    el.style.opacity = (1 - norm * 0.62).toFixed(3);
+    if (d < bestDist) { bestDist = d; best = el; }
+  });
+  if (best && best.dataset.id !== _centeredId) {
+    _centeredId = best.dataset.id;
+    applyCentered(_centeredId);
+  }
+}
+
 function initStrip() {
   const strip = document.getElementById('lensStrip');
   if (!strip) return;
+  let raf = null;
+  strip.addEventListener('scroll', () => {
+    if (raf) return;
+    raf = requestAnimationFrame(() => { raf = null; updateCarousel(); });
+  }, { passive: true });
   strip.addEventListener('wheel', (e) => {
-    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-      strip.scrollLeft += e.deltaY;
-      e.preventDefault();
-    }
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { strip.scrollLeft += e.deltaY; e.preventDefault(); }
   }, { passive: false });
+  window.addEventListener('resize', updateCarousel);
+  requestAnimationFrame(updateCarousel);
 }
 
 // ---------- Cámara ----------
@@ -270,6 +307,7 @@ function startCountdown(n = 5) {
   const shutter = document.getElementById('shutterBtn');
   const cd = document.getElementById('countdown');
   shutter.classList.add('counting');
+  document.getElementById('app').classList.add('capturing'); // oculta la interfaz
   let k = n;
   const show = (v) => {
     cd.classList.add('show');
@@ -283,6 +321,7 @@ function startCountdown(n = 5) {
     else {
       cd.classList.remove('show'); cd.innerHTML = '';
       shutter.classList.remove('counting');
+      document.getElementById('app').classList.remove('capturing');
       _counting = false;
       flash();
       snap();
